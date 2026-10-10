@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -46,7 +47,7 @@ fun AppPage(content: @Composable () -> Unit) {
 
 @Composable
 fun BrandHeader(modifier: Modifier = Modifier) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier.size(42.dp).background(Lime, CircleShape),
             contentAlignment = Alignment.Center
@@ -57,6 +58,16 @@ fun BrandHeader(modifier: Modifier = Modifier) {
         Column {
             Text("BOLILLA", fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
             Text("LOTERÍA EN VIVO", color = MutedText, fontSize = 10.sp, letterSpacing = 1.sp)
+        }
+        Spacer(Modifier.weight(1f))
+        Surface(color = PaleGreen, shape = RoundedCornerShape(50.dp)) {
+            Text(
+                text = "●  EN VIVO",
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                color = SuccessGreen,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
