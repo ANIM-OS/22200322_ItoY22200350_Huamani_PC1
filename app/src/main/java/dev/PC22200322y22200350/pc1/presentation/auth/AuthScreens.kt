@@ -49,6 +49,7 @@ fun RegisterScreen(onGoToLogin: () -> Unit) {
 private fun AuthForm(register: Boolean, onSwitch: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmation by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
     val title = if (register) "Crea tu cuenta" else "Juega con tu suerte"
@@ -83,6 +84,19 @@ private fun AuthForm(register: Boolean, onSwitch: () -> Unit) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
             if (register) {
+                Spacer(Modifier.height(14.dp))
+                OutlinedTextField(
+                    value = confirmation,
+                    onValueChange = { confirmation = it; error = null },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Confirma tu contraseña") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    isError = confirmation.isNotEmpty() && confirmation != password
+                )
+            }
+            if (register) {
                 Spacer(Modifier.height(8.dp))
                 Text("Usa al menos 6 caracteres.", color = MutedText, style = MaterialTheme.typography.bodySmall)
             }
@@ -97,6 +111,8 @@ private fun AuthForm(register: Boolean, onSwitch: () -> Unit) {
                         email.isBlank() -> "Ingresa tu correo electrónico."
                         !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Revisa el formato del correo."
                         password.length < 6 -> "La contraseña debe tener al menos 6 caracteres."
+                        register && confirmation.isBlank() -> "Confirma tu contraseña."
+                        register && password != confirmation -> "Las contraseñas no coinciden."
                         else -> null
                     }
                     if (error == null) {

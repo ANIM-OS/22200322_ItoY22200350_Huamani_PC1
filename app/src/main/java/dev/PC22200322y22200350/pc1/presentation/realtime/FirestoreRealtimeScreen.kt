@@ -48,7 +48,8 @@ fun FirestoreRealtimeScreen(
     email: String,
     uid: String,
     myNumbers: List<Int>,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    onShowPlay: () -> Unit
 ) {
     var draw by remember { mutableStateOf<LotteryDraw?>(null) }
     var balls by remember { mutableStateOf(emptyList<DrawBall>()) }
@@ -71,7 +72,7 @@ fun FirestoreRealtimeScreen(
     }
 
     val hitNumbers = myNumbers.toSet().intersect(balls.map { it.number }.toSet())
-    val finalResult = draw?.isFinished == true && balls.size == 6
+    val finalResult = draw?.isFinished == true && balls.size == 6 && ballsError == null
 
     AppPage {
         Column(
@@ -81,6 +82,8 @@ fun FirestoreRealtimeScreen(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Eyebrow("${draw?.nombre ?: "Sorteo de prueba"} · ${draw?.fecha.orEmpty()}")
                 Spacer(Modifier.weight(1f))
+                OutlinedButton(onClick = onShowPlay, shape = RoundedCornerShape(18.dp)) { Text("Mi jugada") }
+                Spacer(Modifier.padding(horizontal = 4.dp))
                 OutlinedButton(onClick = onSignOut, shape = RoundedCornerShape(18.dp)) { Text("Salir") }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -131,7 +134,7 @@ fun FirestoreRealtimeScreen(
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
                             row.forEach { ball ->
                                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    NumberBall(ball.number, selected = true, modifier = Modifier.size(44.dp))
+                                    NumberBall(ball.number, selected = ball.number in myNumbers, modifier = Modifier.size(44.dp))
                                     Text("${ball.order}°", color = MutedText, fontSize = 10.sp)
                                 }
                             }

@@ -5,7 +5,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import dev.PC22200322y22200350.pc1.data.model.DrawBall
 import dev.PC22200322y22200350.pc1.data.model.LotteryDraw
@@ -27,10 +26,32 @@ object LotteryRepository {
     private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
     private val drawRef get() = firestore.collection("sorteos").document(TEST_DRAW_ID)
 
+    fun userFacingError(exception: Throwable?): String {
+        var current = exception
+        while (current != null) {
+            when ((current as? com.google.firebase.firestore.FirebaseFirestoreException)?.code) {
+                com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED ->
+                    return "Firestore rechazó el acceso. Comprueba tu sesión y las reglas de acceso."
+                com.google.firebase.firestore.FirebaseFirestoreException.Code.UNAVAILABLE,
+                com.google.firebase.firestore.FirebaseFirestoreException.Code.DEADLINE_EXCEEDED ->
+                    return "No hay conexión con Firestore. Comprueba internet y vuelve a intentarlo."
+                else -> Unit
+            }
+            val message = current.message
+            val expectedMessage = listOf("El sorteo", "Ya tienes", "La jugada", "No existe el sorteo")
+                .any { prefix -> message?.startsWith(prefix) == true }
+            if (expectedMessage) {
+                return message.orEmpty()
+            }
+            current = current.cause
+        }
+        return "No se pudo completar la operación. Revisa tu conexión e inténtalo de nuevo."
+    }
+
     fun listenDraw(onChange: (LotteryDraw?, String?) -> Unit): ListenerRegistration =
         drawRef.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                onChange(null, error.localizedMessage ?: "No se pudo escuchar el sorteo.")
+                onChange(null, userFacingError(error))
             } else {
                 onChange(snapshot?.toLotteryDraw(), null)
             }
@@ -38,21 +59,28 @@ object LotteryRepository {
 
     fun listenBalls(onChange: (List<DrawBall>, String?) -> Unit): ListenerRegistration =
         drawRef.collection("bolillas")
-            .orderBy("orden", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    onChange(emptyList(), error.localizedMessage ?: "No se pudieron cargar las bolillas.")
-                } else {
-                    val balls = snapshot?.documents.orEmpty().mapNotNull { doc ->
-                        val number = doc.getLong("numero")?.toInt()
-                        val order = doc.getLong("orden")?.toInt()
-                        if (number != null && order != null && number in 1..45 && order in 1..6) {
-                            DrawBall(number, order)
-                        } else null
-                    }
-                    onChange(balls, null)
+            if (error != null) {
+                onChange(emptyList(), userFacingError(error))
+            } else {
+                val documents = snapshot?.documents.orEmpty()
+                val decoded = documents.mapNotNull { doc ->
+                    val number = doc.getLong("numero")?.toInt()
+                    val order = doc.getLong("orden")?.toInt()
+                    if (number != null && order != null && number in 1..45 && order in 1..6) {
+                        DrawBall(number, order)
+                    } else null
+                }.sortedBy { it.order }
+                val validationError = when {
+                    decoded.size != documents.size -> "Hay bolillas con datos inválidos en Firestore."
+                    decoded.map { it.order }.distinct().size != decoded.size -> "Hay órdenes de bolilla repetidos."
+                    decoded.map { it.number }.distinct().size != decoded.size -> "El sorteo contiene números repetidos."
+                    decoded.map { it.order } != (1..decoded.size).toList() -> "El orden de las bolillas debe comenzar en 1 y ser consecutivo."
+                    else -> null
                 }
+                onChange(decoded, validationError)
             }
+        }
 
     fun getPlay(uid: String): Task<DocumentSnapshot> = drawRef.collection("jugadas").document(uid).get()
 

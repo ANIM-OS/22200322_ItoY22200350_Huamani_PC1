@@ -31,6 +31,7 @@ import dev.PC22200322y22200350.pc1.presentation.LoadingMessage
 import dev.PC22200322y22200350.pc1.presentation.auth.LoginScreen
 import dev.PC22200322y22200350.pc1.presentation.auth.RegisterScreen
 import dev.PC22200322y22200350.pc1.presentation.home.HomeScreen
+import dev.PC22200322y22200350.pc1.presentation.home.SavedPlayScreen
 import dev.PC22200322y22200350.pc1.presentation.realtime.FirestoreRealtimeScreen
 
 private enum class AuthPage { LOGIN, REGISTER }
@@ -66,6 +67,7 @@ private fun AuthenticatedFlow(user: FirebaseUser, onSignOut: () -> Unit) {
     var loading by remember(user.uid) { mutableStateOf(true) }
     var error by remember(user.uid) { mutableStateOf<String?>(null) }
     var ready by remember(user.uid) { mutableStateOf(false) }
+    var showPlaySummary by remember(user.uid) { mutableStateOf(false) }
 
     fun loadPlay() {
         loading = true
@@ -83,7 +85,7 @@ private fun AuthenticatedFlow(user: FirebaseUser, onSignOut: () -> Unit) {
                 loading = false
             }
             .addOnFailureListener { exception ->
-                error = exception.localizedMessage ?: "No se pudo recuperar tu jugada."
+                error = LotteryRepository.userFacingError(exception)
                 ready = false
                 loading = false
             }
@@ -111,11 +113,18 @@ private fun AuthenticatedFlow(user: FirebaseUser, onSignOut: () -> Unit) {
                 Button(onClick = onSignOut) { Text("Cerrar sesión") }
             }
         }
+        ready && play != null && showPlaySummary -> SavedPlayScreen(
+            email = user.email.orEmpty(),
+            numbers = play!!.numbers,
+            onContinue = { showPlaySummary = false },
+            onSignOut = onSignOut
+        )
         ready && play != null -> FirestoreRealtimeScreen(
             email = user.email.orEmpty(),
             uid = user.uid,
             myNumbers = play!!.numbers,
-            onSignOut = onSignOut
+            onSignOut = onSignOut,
+            onShowPlay = { showPlaySummary = true }
         )
         ready -> HomeScreen(
             email = user.email.orEmpty(),

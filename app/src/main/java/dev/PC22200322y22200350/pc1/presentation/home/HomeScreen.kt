@@ -25,6 +25,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,7 +55,10 @@ fun HomeScreen(
     var draw by remember { mutableStateOf<LotteryDraw?>(null) }
     var drawLoaded by remember { mutableStateOf(false) }
     var listenerError by remember { mutableStateOf<String?>(null) }
-    var selectedNumbers by remember { mutableStateOf(emptyList<Int>()) }
+    var selectedNumbersValue by rememberSaveable { mutableStateOf("") }
+    val selectedNumbers = remember(selectedNumbersValue) {
+        selectedNumbersValue.split(',').mapNotNull(String::toIntOrNull)
+    }
     var saveError by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
 
@@ -111,11 +115,12 @@ fun HomeScreen(
                         selected = isSelected,
                         modifier = Modifier.padding(1.dp),
                         onClick = {
-                            selectedNumbers = when {
+                            val updatedSelection = when {
                                 isSelected -> selectedNumbers - number
                                 selectedNumbers.size < 6 -> selectedNumbers + number
                                 else -> selectedNumbers
                             }
+                            selectedNumbersValue = updatedSelection.joinToString(",")
                             saveError = null
                         }
                     )
@@ -144,9 +149,7 @@ fun HomeScreen(
                         LotteryRepository.savePlay(uid, selectedNumbers).addOnCompleteListener { task ->
                             saving = false
                             if (task.isSuccessful) onPlaySaved(selectedNumbers)
-                            else saveError = task.exception?.cause?.message
-                                ?: task.exception?.message?.substringAfter("FAILED_PRECONDITION: ")
-                                ?: "No se pudo guardar la jugada. Comprueba el estado del sorteo y tus reglas de Firestore."
+                            else saveError = LotteryRepository.userFacingError(task.exception)
                         }
                     }
                 },

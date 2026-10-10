@@ -11,7 +11,13 @@ Aplicación Android en Kotlin y Jetpack Compose para autenticación por correo y
 
 1. El archivo `app/google-services.json` debe corresponder al `applicationId` de la app: `dev.PC22200322y22200350.pc1`.
 2. En Firebase Authentication, habilita el proveedor **Correo electrónico/Contraseña**.
-3. Crea una base de datos de Cloud Firestore y publica las reglas incluidas en `firestore.rules`.
+3. Crea una base de datos de Cloud Firestore. Desde la raíz del proyecto, publica las reglas con:
+
+   ```bash
+   firebase deploy --only firestore:rules --project loteria-df82e
+   ```
+
+   Si la CLI informa que las credenciales vencieron, ejecuta `firebase login --reauth` y vuelve a desplegar.
 4. Desde Firestore, crea este documento:
 
    ```text
