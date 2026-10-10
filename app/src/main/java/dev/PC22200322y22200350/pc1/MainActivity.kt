@@ -4,13 +4,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import dev.PC22200322y22200350.pc1.presentation.navigation.AppNavGraph
 import dev.PC22200322y22200350.pc1.ui.theme.PC1Theme
 
 class MainActivity : ComponentActivity() {
@@ -18,30 +20,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            PC1Theme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+            PC1Theme(darkTheme = false, dynamicColor = false) {
+                val view = LocalView.current
+                SideEffect {
+                    WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
+                    WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = true
                 }
+                Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) { AppNavGraph() }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    PC1Theme {
-        Greeting("Android")
     }
 }
